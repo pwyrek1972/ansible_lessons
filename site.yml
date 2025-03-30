@@ -19,6 +19,24 @@
     when: ansible_distribution == "Ubuntu"
 
 
+- hosts: workstations
+  become: true
+  tasks:
+
+  - name: install unzip
+    package:
+      name: unzip
+
+  - name: install terraform
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/1.11.3/terraform_1.11.3_linux_amd64.zip
+      dest: /usr/local/bin
+      remote_src: yes
+      mode: 0755
+      owner: root
+      group: root
+
+
 - hosts: web_servers
   become: true
   tasks:
@@ -40,6 +58,30 @@
         - php
       state: latest
     when: ansible_distribution == "Fedora"
+
+  - name: start httpd (Fedora)
+    tags: apache,fedora,httpd
+    service: 
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Fedora"
+
+  - name: chaange e-mail address for admin
+    tags: apache,fedora,httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "Fedora"
+    register: httpd
+
+  - name: restart httpd (Fedora)
+    tags: apache,fedora,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
 
   - name: copy default html file for site
     tags: apache,apache2,httpd
